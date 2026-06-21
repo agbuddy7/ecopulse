@@ -4,6 +4,7 @@
 [![Tests: 18 Passing](https://img.shields.io/badge/Tests-18%20Passing-brightgreen.svg)](#testing)
 [![Accessibility: WCAG 2.1 AA](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-purple.svg)](#accessibility)
 [![Built With: Vanilla JS](https://img.shields.io/badge/Built%20With-Vanilla%20JS-yellow.svg)](#tech-stack)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/agbuddy7/ecopulse)
 
 > **Google Prompt Wars Submission** — A smart, dynamic, and accessible single-page web application (SPA) that helps individuals understand, track, and reduce their personal carbon footprint through personalized insights, a rule-based NLP chatbot assistant, daily activity logging, and interactive SVG data visualizations.
 
@@ -12,6 +13,7 @@
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+- [Deployment](#deployment)
 - [Live Demo & Screenshots](#live-demo--screenshots)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -30,6 +32,42 @@
 - [Design System](#design-system)
 - [Contributing](#contributing)
 - [License](#license)
+
+---
+
+## Deployment
+
+EcoPulse is a zero-build static site. It deploys in under 30 seconds on any static hosting platform.
+
+### ▲ Deploy on Vercel (Recommended)
+
+**Option A — One-click from GitHub (after pushing your repo):**
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Click **"Import Git Repository"**
+3. Select your `agbuddy7/ecopulse` repo
+4. Framework preset: **Other** (leave blank)
+5. Build command: *(leave empty)*
+6. Output directory: **`.`** (a single dot — the project root)
+7. Click **"Deploy"** — live in ~15 seconds ✅
+
+**Option B — Vercel CLI:**
+```bash
+npm install -g vercel
+vercel --prod
+```
+
+The included `vercel.json` configures:
+- Static file serving from the project root
+- Security headers (X-Frame-Options, XSS-Protection, Referrer-Policy)
+- Long-term caching for JS/CSS assets (`Cache-Control: immutable`)
+
+### 🌐 Other Free Hosting Options
+
+| Platform | Steps |
+|---|---|
+| **GitHub Pages** | Repo Settings → Pages → Branch: `main`, Folder: `/ (root)` |
+| **Netlify** | Drag & drop the `terratrack` folder to [netlify.com/drop](https://app.netlify.com/drop) |
+| **Cloudflare Pages** | Connect GitHub repo, build command: *(empty)*, output: `.` |
 
 ---
 
