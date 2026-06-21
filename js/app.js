@@ -7,6 +7,7 @@
 import { store } from './state.js';
 import { calculateProfileFootprint, generatePersonalizedTips } from './calculator.js';
 import { processAssistantMessage } from './assistant.js';
+import { renderCategoryChart, renderHistoryChart } from './charts.js';
 
 // DOM Element Selectors
 const docHtml = document.documentElement;
@@ -327,215 +328,7 @@ logDate.addEventListener('change', (e) => {
   renderLogsAndHabits();
 });
 
-/**
- * Renders SVG bar chart for Category Breakdown.
- */
-function renderCategoryChart(breakdown) {
-  categoryChartContainer.innerHTML = '';
-
-  const { transport, energy, diet, waste, total } = breakdown;
-  
-  if (total === 0) {
-    categoryChartContainer.innerHTML = `<p class="text-muted">No data available. Try inputting details.</p>`;
-    return;
-  }
-
-  const data = [
-    { label: 'Transport', val: transport, color: '#6366f1' }, // Indigo
-    { label: 'Energy', val: energy, color: '#f59e0b' },    // Yellow
-    { label: 'Diet', val: diet, color: '#10b981' },      // Emerald
-    { label: 'Waste', val: waste, color: '#ef4444' }       // Red
-  ];
-
-  // SVG parameters
-  const svgW = 400;
-  const svgH = 180;
-  const barPadding = 12;
-  const rowHeight = 35;
-  const labelWidth = 90;
-  const maxBarWidth = 260;
-
-  const maxVal = Math.max(...data.map(d => d.val), 1);
-
-  // Generate SVG Elements programmatically for reliability & accessibility
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-  svg.setAttribute('class', 'chart-svg');
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', `Carbon emissions category breakdown: Transport ${transport} kg, Energy ${energy} kg, Diet ${diet} kg, Waste ${waste} kg.`);
-
-  data.forEach((item, index) => {
-    const y = index * (rowHeight + barPadding) + 10;
-    const barWidth = (item.val / maxVal) * maxBarWidth;
-
-    // Label text
-    const textLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    textLabel.setAttribute('x', '0');
-    textLabel.setAttribute('y', String(y + 20));
-    textLabel.setAttribute('fill', 'currentColor');
-    textLabel.setAttribute('font-family', 'var(--font-title)');
-    textLabel.setAttribute('font-weight', '600');
-    textLabel.setAttribute('font-size', '13px');
-    textLabel.textContent = item.label;
-
-    // Background track
-    const rectTrack = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rectTrack.setAttribute('x', String(labelWidth));
-    rectTrack.setAttribute('y', String(y));
-    rectTrack.setAttribute('width', String(maxBarWidth));
-    rectTrack.setAttribute('height', '24');
-    rectTrack.setAttribute('rx', '6');
-    rectTrack.setAttribute('fill', 'rgba(255, 255, 255, 0.03)');
-
-    // Active Value Bar
-    const rectBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rectBar.setAttribute('x', String(labelWidth));
-    rectBar.setAttribute('y', String(y));
-    rectBar.setAttribute('width', String(Math.max(12, barWidth))); // Minimum width for visibility
-    rectBar.setAttribute('height', '24');
-    rectBar.setAttribute('rx', '6');
-    rectBar.setAttribute('fill', item.color);
-
-    // Value label
-    const textVal = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    textVal.setAttribute('x', String(labelWidth + Math.max(12, barWidth) + 8));
-    textVal.setAttribute('y', String(y + 16));
-    textVal.setAttribute('fill', 'currentColor');
-    textVal.setAttribute('font-family', 'var(--font-body)');
-    textVal.setAttribute('font-size', '12px');
-    textVal.setAttribute('font-weight', '700');
-    textVal.textContent = `${Math.round(item.val)} kg`;
-
-    svg.appendChild(textLabel);
-    svg.appendChild(rectTrack);
-    svg.appendChild(rectBar);
-    svg.appendChild(textVal);
-  });
-
-  categoryChartContainer.appendChild(svg);
-}
-
-/**
- * Renders SVG line chart of weekly net carbon totals.
- */
-function renderHistoryChart() {
-  historyChartContainer.innerHTML = '';
-
-  // Get dates for the last 7 days
-  const last7Days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    last7Days.push(d.toISOString().split('T')[0]);
-  }
-
-  const dataPoints = last7Days.map(date => {
-    const stats = store.getDailyFootprint(date);
-    return {
-      date,
-      total: stats.total,
-      label: new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-    };
-  });
-
-  const maxVal = Math.max(...dataPoints.map(d => d.total), 5); // Fallback to 5 to avoid flat graph
-
-  const svgW = 400;
-  const svgH = 180;
-  const paddingLeft = 40;
-  const paddingRight = 15;
-  const paddingTop = 20;
-  const paddingBottom = 30;
-
-  const graphW = svgW - paddingLeft - paddingRight;
-  const graphH = svgH - paddingTop - paddingBottom;
-
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-  svg.setAttribute('class', 'chart-svg');
-  svg.setAttribute('role', 'img');
-  
-  const formattedAriaLabel = dataPoints.map(dp => `${dp.label}: ${dp.total} kg`).join(', ');
-  svg.setAttribute('aria-label', `Carbon emissions trend line for past 7 days: ${formattedAriaLabel}`);
-
-  // Draw grid lines
-  const gridLinesCount = 3;
-  for (let i = 0; i <= gridLinesCount; i++) {
-    const yVal = paddingTop + (graphH * i) / gridLinesCount;
-    const gridVal = Math.round(maxVal - (maxVal * i) / gridLinesCount);
-    
-    // Grid Line
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', String(paddingLeft));
-    line.setAttribute('y1', String(yVal));
-    line.setAttribute('x2', String(svgW - paddingRight));
-    line.setAttribute('y2', String(yVal));
-    line.setAttribute('class', 'chart-grid-line');
-    
-    // Axis numeric scale
-    const textScale = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    textScale.setAttribute('x', String(paddingLeft - 8));
-    textScale.setAttribute('y', String(yVal + 4));
-    textScale.setAttribute('text-anchor', 'end');
-    textScale.setAttribute('fill', 'var(--text-muted)');
-    textScale.setAttribute('font-size', '10px');
-    textScale.textContent = String(gridVal);
-
-    svg.appendChild(line);
-    svg.appendChild(textScale);
-  }
-
-  // Draw Line path points
-  let pathD = '';
-  const points = [];
-
-  dataPoints.forEach((dp, index) => {
-    const x = paddingLeft + (index * graphW) / 6;
-    const y = paddingTop + graphH - (dp.total / maxVal) * graphH;
-    points.push({ x, y, val: dp.total, dateLabel: dp.label });
-
-    if (index === 0) {
-      pathD += `M ${x} ${y}`;
-    } else {
-      pathD += ` L ${x} ${y}`;
-    }
-  });
-
-  // Render Line Path
-  const linePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  linePath.setAttribute('d', pathD);
-  linePath.setAttribute('class', 'chart-line');
-  svg.appendChild(linePath);
-
-  // Render nodes and text labels
-  points.forEach((point, index) => {
-    // Circle Node
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', String(point.x));
-    circle.setAttribute('cy', String(point.y));
-    circle.setAttribute('r', '5');
-    circle.setAttribute('fill', 'var(--color-primary)');
-    circle.setAttribute('stroke', 'var(--bg-app)');
-    circle.setAttribute('stroke-width', '1.5');
-    
-    // Title tag inside node for basic mouse hover description
-    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-    title.textContent = `${point.dateLabel}: ${point.val} kg CO2e`;
-    circle.appendChild(title);
-
-    // X-axis label
-    const textLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    textLabel.setAttribute('x', String(point.x));
-    textLabel.setAttribute('y', String(svgH - 8));
-    textLabel.setAttribute('class', 'chart-label');
-    textLabel.textContent = point.dateLabel;
-
-    svg.appendChild(circle);
-    svg.appendChild(textLabel);
-  });
-
-  historyChartContainer.appendChild(svg);
-}
+// SVG Charts logic has been extracted to charts.js.
 
 /**
  * Renders checklist of habits, dynamic insights, table log items, and dashboard metrics.
@@ -723,8 +516,25 @@ function renderLogsAndHabits() {
   // recalculate total
   dailyBreakdown.total = dailyBreakdown.transport + dailyBreakdown.energy + dailyBreakdown.diet + dailyBreakdown.waste;
 
-  renderCategoryChart(dailyBreakdown);
-  renderHistoryChart();
+  renderCategoryChart(categoryChartContainer, dailyBreakdown);
+  
+  // Prepare data for history chart
+  const last7Days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    last7Days.push(d.toISOString().split('T')[0]);
+  }
+
+  const dataPoints = last7Days.map(date => {
+    const dailyStats = store.getDailyFootprint(date);
+    return {
+      date,
+      total: dailyStats.total,
+      label: new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    };
+  });
+  renderHistoryChart(historyChartContainer, dataPoints);
 }
 
 /**
